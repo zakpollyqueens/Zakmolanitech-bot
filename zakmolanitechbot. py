@@ -1,0 +1,97 @@
+import os
+import asyncio
+import random
+from telegram.ext import Application, CommandHandler
+
+# ========== CONFIG ==========
+TOKEN = os.environ['TOKEN']
+CHANNEL_ID = "@ZakmolanitechSolutions"
+
+# ========== DATA ==========
+tech_tips = [
+    "💡 Clear WhatsApp cache: Settings > Storage > Manage Storage",
+    "📱 MTN/Airtel: Dial *303# to check data bundles fast",
+    "💻 Learn Python in 30 days and get remote tech jobs",
+    "🔒 Turn on 2FA for WhatsApp: Settings > Account > Two-step verification",
+    "📶 Boost internet: Turn on Airplane mode for 10s then off"
+]
+
+participants = []
+
+
+# ========== AUTO POST EVERY 4 HOURS ==========
+async def tech_poster(app):
+    """Posts a tech tip to the channel every 4 hours"""
+    while True:
+        await asyncio.sleep(14400)  # 4 hours = 14400 seconds
+        tip = random.choice(tech_tips)
+        message = f"*ZAKMOLANITECH SOLUTIONS*\n\n{tip}\n\n#TechTips #UgandaTech"
+        await app.bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="Markdown")
+
+
+# ========== GIVEAWAY COMMANDS ==========
+async def start_giveaway(update, context):
+    """Starts a new giveaway. Usage: /startgiveaway"""
+    global participants
+    participants = []
+    message = (
+        "🎁 *GIVEAWAY STARTED!*\n\n"
+        "To enter, reply with: JOIN\n"
+        "Winner will be picked randomly.\n\n"
+        "#Giveaway #Zakmolanitech"
+    )
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="Markdown")
+
+
+async def join_giveaway(update, context):
+    """User joins giveaway. Usage: /join or reply JOIN"""
+    global participants
+    user = update.message.from_user.username
+    
+    if not user:
+        await update.message.reply_text("❌ Please set a Telegram username first: Settings > Username")
+        return
+        
+    if user not in participants:
+        participants.append(user)
+        await update.message.reply_text(f"✅ @{user} entered the giveaway!")
+    else:
+        await update.message.reply_text("⚠️ You already entered!")
+
+
+async def end_giveaway(update, context):
+    """Ends giveaway and picks winner. Usage: /endgiveaway"""
+    global participants
+    if participants:
+        winner = random.choice(participants)
+        message = (
+            f"🎉 *GIVEAWAY WINNER!*\n\n"
+            f"Congratulations @{winner}!\n"
+            f"DM @ZakmolanitechSolutions to claim your prize.\n\n"
+            f"Total entries: {len(participants)}"
+        )
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=message, parse_mode="Markdown")
+        participants = []
+    else:
+        await context.bot.send_message(chat_id=CHANNEL_ID, text="😢 No one joined the giveaway.")
+
+
+# ========== MAIN ==========
+def main():
+    """Starts the bot"""
+    app = Application.builder().token(TOKEN).build()
+    
+    # Commands
+    app.add_handler(CommandHandler("startgiveaway", start_giveaway))
+    app.add_handler(CommandHandler("join", join_giveaway))
+    app.add_handler(CommandHandler("endgiveaway", end_giveaway))
+    
+    # Start auto poster
+    asyncio.get_event_loop().create_task(tech_poster(app))
+    
+    print("Bot is running...")
+    app.run_polling()
+
+
+if __name__ == "__main__": 
+    main()
