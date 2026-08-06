@@ -1,3 +1,1 @@
-zakmolanitech-bot/
-├── zakmolanitech_bot.py
-└── requirements.txt
+    python-telegram-bot==21.3
